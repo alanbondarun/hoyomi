@@ -1,5 +1,5 @@
 use rusoto_core::Region;
-use rusoto_ec2::{Ec2, Ec2Client, DescribeInstancesRequest};
+use rusoto_ec2::{DescribeInstancesRequest, Ec2, Ec2Client};
 
 fn main() {
     let ec2_client = Ec2Client::new(Region::ApNortheast2);
