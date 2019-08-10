@@ -1,0 +1,6 @@
+# Rust build files
+/target
+**/*.rs.bk
+
+# IDE
+/.idea/
