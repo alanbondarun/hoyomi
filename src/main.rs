@@ -12,7 +12,7 @@ fn main() {
             .expect("error while requesting region"),
     )
     .expect("error while parsing region");
-    let ec2_client = Ec2Client::new(region);
+    let ec2_client = Ec2Client::new(region.clone());
     let request = DescribeInstancesRequest::default();
 
     let mut public_address_by_name = HashMap::new();
@@ -45,7 +45,7 @@ fn main() {
 
     let selected_instance = config::request_string("insert instance name: ")
         .expect("error while requesting instance name");
-    let ssh_key_filepath = config::request_string("insert ssh key filepath: ")
+    let ssh_key_filepath = config::request_ssh_key_path(&region)
         .expect("error while requesting ssh key filepath");
     match public_address_by_name.get(&selected_instance[..]) {
         Some(public_address) => {
