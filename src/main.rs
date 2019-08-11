@@ -14,7 +14,8 @@ fn main() {
                     .flat_map(|reservation| reservation.instances.iter())
                     .flat_map(|instances| instances.iter())
                     .for_each(|instance| {
-                        let name = extract_name(instance).map_or("<unnamed>", |name| name);
+                        let name =
+                            extract_name(instance).map_or("<unnamed>", |name| name);
                         println!("{:?}", name)
                     })
             }
