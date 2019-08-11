@@ -14,9 +14,17 @@ fn main() {
                     .flat_map(|reservation| reservation.instances.iter())
                     .flat_map(|instances| instances.iter())
                     .for_each(|instance| {
-                        let name =
-                            extract_name(instance).map_or("<unnamed>", |name| name);
-                        println!("{:?}", name)
+                        let name = extract_name(&instance).unwrap_or("<unnamed>");
+                        let public_dns =
+                            instance.public_ip_address.as_ref().unwrap_or_else(|| {
+                                instance.public_dns_name.as_ref().unwrap()
+                            });
+                        if public_dns != "" {
+                            println!(
+                                "{} ssh -i <ssh-key> ec2-user@{}",
+                                name, public_dns
+                            );
+                        }
                     })
             }
         }
@@ -26,12 +34,13 @@ fn main() {
     }
 }
 
-fn extract_name(instance: &Instance) -> Option<&String> {
+fn extract_name(instance: &Instance) -> Option<&str> {
     match &instance.tags {
         Some(tags) => tags
             .iter()
             .find(|tag| tag.key == Some("Name".to_string()))
-            .and_then(|tag| (tag.value).as_ref()),
+            .and_then(|tag| tag.value.as_ref())
+            .map(|name| &name[..]),
         None => None,
     }
 }
