@@ -1,6 +1,6 @@
 use std::io::{stdin, stdout, Error, Write};
 
-pub fn request_ssh_key_filepath(message: &str) -> Result<String, Error> {
+pub fn request_string(message: &str) -> Result<String, Error> {
     print!("{}", message);
     stdout().flush()?;
 

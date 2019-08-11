@@ -1,16 +1,15 @@
 use rusoto_core::Region;
 use rusoto_ec2::{DescribeInstancesRequest, Ec2, Ec2Client, Instance};
+use std::collections::HashMap;
+use std::process::Command;
 
 mod config;
 
 fn main() {
-    let ssh_key_filepath =
-        crate::config::request_ssh_key_filepath("insert ssh key filepath: ")
-            .expect("error while requesting ssh key filepath");
-
     let ec2_client = Ec2Client::new(Region::ApNortheast1);
     let request = DescribeInstancesRequest::default();
 
+    let mut public_address_by_name = HashMap::new();
     match ec2_client.describe_instances(request).sync() {
         Ok(response) => {
             // TODO next_token
@@ -26,10 +25,9 @@ fn main() {
                                 instance.public_dns_name.as_ref().unwrap()
                             });
                         if public_dns != "" {
-                            println!(
-                                "{}: ssh -i {} ec2-user@{}",
-                                name, ssh_key_filepath, public_dns
-                            );
+                            println!("{}", name);
+                            public_address_by_name
+                                .insert(name.to_string(), public_dns.to_string());
                         }
                     })
             }
@@ -37,6 +35,23 @@ fn main() {
         Err(error) => {
             println!("error: {:?}", error);
         }
+    }
+
+    let selected_instance = config::request_string("insert instance name: ")
+        .expect("error while requesting instance name");
+    let ssh_key_filepath = config::request_string("insert ssh key filepath: ")
+        .expect("error while requesting ssh key filepath");
+    match public_address_by_name.get(&selected_instance[..]) {
+        Some(public_address) => {
+            let mut child = Command::new("ssh")
+                .arg("-i")
+                .arg(ssh_key_filepath)
+                .arg(format!("ec2-user@{}", public_address))
+                .spawn()
+                .expect("ssh failed to start");
+            child.wait().expect("failed to wait ssh");
+        }
+        None => println!("instance name {} not known", selected_instance),
     }
 }
 
