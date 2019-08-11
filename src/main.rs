@@ -1,8 +1,14 @@
 use rusoto_core::Region;
 use rusoto_ec2::{DescribeInstancesRequest, Ec2, Ec2Client, Instance};
 
+mod config;
+
 fn main() {
-    let ec2_client = Ec2Client::new(Region::ApNortheast2);
+    let ssh_key_filepath =
+        crate::config::request_ssh_key_filepath("insert ssh key filepath: ")
+            .expect("error while requesting ssh key filepath");
+
+    let ec2_client = Ec2Client::new(Region::ApNortheast1);
     let request = DescribeInstancesRequest::default();
 
     match ec2_client.describe_instances(request).sync() {
@@ -21,8 +27,8 @@ fn main() {
                             });
                         if public_dns != "" {
                             println!(
-                                "{} ssh -i <ssh-key> ec2-user@{}",
-                                name, public_dns
+                                "{}: ssh -i {} ec2-user@{}",
+                                name, ssh_key_filepath, public_dns
                             );
                         }
                     })
