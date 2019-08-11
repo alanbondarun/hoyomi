@@ -2,11 +2,17 @@ use rusoto_core::Region;
 use rusoto_ec2::{DescribeInstancesRequest, Ec2, Ec2Client, Instance};
 use std::collections::HashMap;
 use std::process::Command;
+use std::str::FromStr;
 
 mod config;
 
 fn main() {
-    let ec2_client = Ec2Client::new(Region::ApNortheast1);
+    let region = Region::from_str(
+        &config::request_string("insert region: ")
+            .expect("error while requesting region"),
+    )
+    .expect("error while parsing region");
+    let ec2_client = Ec2Client::new(region);
     let request = DescribeInstancesRequest::default();
 
     let mut public_address_by_name = HashMap::new();
