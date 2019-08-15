@@ -18,8 +18,7 @@ fn main() {
     let ec2_client = Ec2Client::new(region.clone());
     let request = DescribeInstancesRequest::default();
 
-    let mut public_address_by_name = HashMap::new();
-    let mut image_ids_by_name = HashMap::new();
+    let mut descriptions_by_name = HashMap::new();
     match ec2_client.describe_instances(request).sync() {
         Ok(response) => {
             // TODO next_token
@@ -29,21 +28,9 @@ fn main() {
                     .flat_map(|reservation| reservation.instances.iter())
                     .flat_map(|instances| instances.iter())
                     .for_each(|instance| {
-                        let name = extract_name(&instance).unwrap_or("<unnamed>");
-                        let public_dns =
-                            instance.public_ip_address.as_ref().unwrap_or_else(|| {
-                                instance.public_dns_name.as_ref().unwrap()
-                            });
-
-                        if public_dns != "" {
-                            println!("{}", name);
-                            public_address_by_name
-                                .insert(name.to_string(), public_dns.to_string());
-                        }
-                        if let Some(image_id) = &instance.image_id {
-                            image_ids_by_name
-                                .insert(name.to_string(), image_id.to_string());
-                        }
+                        let description = extract_description(&instance);
+                        descriptions_by_name
+                            .insert(description.name.clone(), description);
                     })
             }
         }
@@ -52,36 +39,55 @@ fn main() {
         }
     }
 
+    for instance_name in descriptions_by_name.keys() {
+        println!("instance: {}", instance_name);
+    }
+
     let selected_instance = config::request_string("insert instance name: ")
         .expect("error while requesting instance name");
     let ssh_key_filepath = config::request_ssh_key_path(&region)
         .expect("error while requesting ssh key filepath");
-    match public_address_by_name.get(&selected_instance[..]) {
-        Some(public_address) => {
-            let image_request = DescribeImagesRequest {
-                filters: Some(vec![Filter {
-                    name: Some("image-id".to_string()),
-                    values: Some(vec![(&image_ids_by_name.get(&selected_instance))
-                        .unwrap()
-                        .to_string()]),
-                }]),
-                ..DescribeImagesRequest::default()
-            };
-            let user_name = ec2_client
-                .describe_images(image_request)
-                .sync()
-                .map(|response| extract_user_name(&response.images.unwrap()[0]))
-                .unwrap_or("ec2-user".to_string());
+    match descriptions_by_name.get(&selected_instance) {
+        Some(description) => {
+            let user_name = get_user_name(ec2_client, description);
 
             let mut child = Command::new("ssh")
                 .arg("-i")
                 .arg(ssh_key_filepath)
-                .arg(format!("{}@{}", user_name, public_address))
+                .arg(format!(
+                    "{}@{}",
+                    user_name,
+                    description.public_address.as_ref().unwrap()
+                ))
                 .spawn()
                 .expect("ssh failed to start");
             child.wait().expect("failed to wait ssh");
         }
         None => println!("instance name {} not known", selected_instance),
+    }
+}
+
+struct InstanceDescription {
+    name: String,
+    public_address: Option<String>,
+    image_id: Option<String>,
+}
+
+fn extract_description(instance: &Instance) -> InstanceDescription {
+    let name = extract_name(&instance).unwrap_or("<unnamed>");
+    let public_dns = instance
+        .public_ip_address
+        .as_ref()
+        .unwrap_or_else(|| instance.public_dns_name.as_ref().unwrap());
+
+    InstanceDescription {
+        name: name.to_string(),
+        public_address: if public_dns != "" {
+            Some(public_dns.to_string())
+        } else {
+            None
+        },
+        image_id: instance.image_id.clone(),
     }
 }
 
@@ -94,6 +100,23 @@ fn extract_name(instance: &Instance) -> Option<&str> {
             .map(|name| &name[..]),
         None => None,
     }
+}
+
+fn get_user_name(ec2_client: Ec2Client, description: &InstanceDescription) -> String {
+    let image_request = DescribeImagesRequest {
+        filters: Some(vec![Filter {
+            name: Some("image-id".to_string()),
+            values: (&description.image_id)
+                .as_ref()
+                .map(|image_id| vec![image_id.to_string()]),
+        }]),
+        ..DescribeImagesRequest::default()
+    };
+    ec2_client
+        .describe_images(image_request)
+        .sync()
+        .map(|response| extract_user_name(&response.images.unwrap()[0]))
+        .unwrap_or("ec2-user".to_string())
 }
 
 fn extract_user_name(image: &Image) -> String {
