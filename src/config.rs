@@ -2,8 +2,10 @@ use rusoto_core::Region;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::default::Default;
+use std::error::Error;
 use std::fs;
-use std::io::{stdin, stdout, Error, Write};
+use std::io::{stdin, stdout, Write};
+use std::str::FromStr;
 
 #[derive(Serialize, Deserialize)]
 struct Config {
@@ -26,7 +28,7 @@ impl Default for Config {
     }
 }
 
-pub fn request_string(message: &str) -> Result<String, Error> {
+pub fn request_string(message: &str) -> Result<String, std::io::Error> {
     print!("{}", message);
     stdout().flush()?;
 
@@ -36,11 +38,17 @@ pub fn request_string(message: &str) -> Result<String, Error> {
         .map(|_| filepath.trim().to_string())
 }
 
-pub fn request_ssh_key_path(region: &Region) -> Result<String, Error> {
+pub fn request_region() -> Result<Region, Box<dyn Error>> {
+    request_string("insert region: ")
+        .map_err(|err| err.into())
+        .and_then(|region| Region::from_str(&region).map_err(|err| err.into()))
+}
+
+pub fn request_ssh_key_path(region: &Region) -> Result<String, Box<dyn Error>> {
     let config = Config::load();
     if let Some(path) = config.ssh_key_path.get(region.name()) {
         return Ok(String::from(path));
     }
 
-    request_string("insert ssh key filepath: ")
+    request_string("insert ssh key filepath: ").map_err(|err| err.into())
 }

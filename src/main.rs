@@ -1,16 +1,11 @@
-use rusoto_core::Region;
+use std::error::Error;
 use std::process::Command;
-use std::str::FromStr;
 
 mod client;
 mod config;
 
-fn main() {
-    let region = Region::from_str(
-        &config::request_string("insert region: ")
-            .expect("error while requesting region"),
-    )
-    .expect("error while parsing region");
+fn main() -> Result<(), Box<dyn Error>> {
+    let region = config::request_region()?;
 
     let client = crate::client::Client::new(&region);
     let descriptions_by_name = client.get_descriptions_by_name();
@@ -19,10 +14,8 @@ fn main() {
         println!("instance: {}", instance_name);
     }
 
-    let selected_instance = config::request_string("insert instance name: ")
-        .expect("error while requesting instance name");
-    let ssh_key_filepath = config::request_ssh_key_path(&region)
-        .expect("error while requesting ssh key filepath");
+    let selected_instance = config::request_string("insert instance name: ")?;
+    let ssh_key_filepath = config::request_ssh_key_path(&region)?;
     match descriptions_by_name.get(&selected_instance) {
         Some(description) => {
             let user_name = client.get_user_name(description);
@@ -39,6 +32,10 @@ fn main() {
                 .expect("ssh failed to start");
             child.wait().expect("failed to wait ssh");
         }
-        None => println!("instance name {} not known", selected_instance),
+        None => {
+            return Err(format!("instance name {} not known", selected_instance).into())
+        }
     }
+
+    Ok(())
 }
