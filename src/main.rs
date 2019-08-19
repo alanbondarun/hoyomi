@@ -3,6 +3,7 @@ use std::process::Command;
 
 mod client;
 mod config;
+mod logic;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let region = config::request_region()?;

@@ -5,7 +5,6 @@ use std::default::Default;
 use std::error::Error;
 use std::fs;
 use std::io::{stdin, stdout, Write};
-use std::str::FromStr;
 
 #[derive(Serialize, Deserialize)]
 struct Config {
@@ -41,7 +40,10 @@ pub fn request_string(message: &str) -> Result<String, std::io::Error> {
 pub fn request_region() -> Result<Region, Box<dyn Error>> {
     request_string("insert region: ")
         .map_err(|err| err.into())
-        .and_then(|region| Region::from_str(&region).map_err(|err| err.into()))
+        .and_then(|region| {
+            crate::logic::most_similar_region(&region)
+                .ok_or(format!("failed to parse region {}", region).into())
+        })
 }
 
 pub fn request_ssh_key_path(region: &Region) -> Result<String, Box<dyn Error>> {
