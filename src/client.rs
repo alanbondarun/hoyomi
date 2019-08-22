@@ -92,19 +92,24 @@ impl Client {
         self.ec2_client
             .describe_images(image_request)
             .sync()
-            .map(|response| Self::extract_user_name(&response.images.unwrap()[0]))
+            .map(|response| {
+                Self::extract_user_name(
+                    response.images.as_ref().and_then(|images| images.first()),
+                )
+            })
             .unwrap_or("ec2-user".to_string())
     }
 
-    fn extract_user_name(image: &Image) -> String {
-        if let Some(image_name) = &image.name {
-            if image_name.starts_with("ubuntu") {
-                "ubuntu".to_string()
-            } else {
-                "ec2-user".to_string()
-            }
-        } else {
-            "ec2-user".to_string()
-        }
+    fn extract_user_name(image: Option<&Image>) -> String {
+        image
+            .and_then(|img| img.name.as_ref())
+            .map(|image_name| {
+                if image_name.starts_with("ubuntu") {
+                    "ubuntu".to_string()
+                } else {
+                    "ec2-user".to_string()
+                }
+            })
+            .unwrap_or("ec2-user".to_string())
     }
 }
