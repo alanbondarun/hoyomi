@@ -2,7 +2,9 @@
 name = "hoyomi"
 version = "0.1.0"
 authors = ["alanb <efik722life@gmail.com>"]
+description = "CLI tool for cloud resources management"
 edition = "2018"
+license = "MIT"
 
 [dependencies]
 termion = "1.5.3"
