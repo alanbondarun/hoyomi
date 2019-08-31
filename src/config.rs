@@ -42,7 +42,7 @@ pub fn request_region() -> Result<Region, Box<dyn Error>> {
         .map_err(|err| err.into())
         .and_then(|region| {
             crate::logic::most_similar_region(&region)
-                .ok_or(format!("failed to parse region {}", region).into())
+                .ok_or_else(|| format!("failed to parse region {}", region).into())
         })
 }
 

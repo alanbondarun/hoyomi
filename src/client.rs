@@ -97,7 +97,7 @@ impl Client {
                     response.images.as_ref().and_then(|images| images.first()),
                 )
             })
-            .unwrap_or("ec2-user".to_string())
+            .unwrap_or_else(|_| "ec2-user".to_string())
     }
 
     fn extract_user_name(image: Option<&Image>) -> String {
@@ -110,6 +110,6 @@ impl Client {
                     "ec2-user".to_string()
                 }
             })
-            .unwrap_or("ec2-user".to_string())
+            .unwrap_or_else(|| "ec2-user".to_string())
     }
 }
