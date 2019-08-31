@@ -12,6 +12,6 @@ jobs:
     - name: Run tests
       run: cargo test --verbose
     - name: Formatting
-      run: cargo fmt --verbose
+      run: cargo fmt --verbose -- --check
     - name: Linting
-      run: cargo clippy --verbose
+      run: cargo clippy --verbose -- -D warnings
