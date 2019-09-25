@@ -1,6 +1,6 @@
 use std::error::Error;
 use std::process::Command;
-use termion::color;
+use crossterm::{Color, Colored};
 
 mod client;
 mod config;
@@ -10,9 +10,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     let region = config::request_region()?;
     println!(
         "using region {}{}{}",
-        color::Fg(color::LightRed),
+        Colored::Fg(Color::Red),
         region.name(),
-        color::Fg(color::Reset)
+        Colored::Fg(Color::Reset)
     );
 
     let client = crate::client::Client::new(&region);

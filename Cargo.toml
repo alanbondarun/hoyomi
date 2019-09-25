@@ -7,7 +7,7 @@ edition = "2018"
 license = "MIT"
 
 [dependencies]
-termion = "1.5.3"
+crossterm = "0.11.0"
 rusoto_core = "0.40.0"
 rusoto_ec2 = "0.40.0"
 serde = { version = "1.0.98", features = ["derive"] }
