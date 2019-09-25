@@ -1,6 +1,6 @@
+use crossterm::{Color, Colored};
 use std::error::Error;
 use std::process::Command;
-use crossterm::{Color, Colored};
 
 mod client;
 mod config;
